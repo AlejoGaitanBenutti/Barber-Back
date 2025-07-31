@@ -28,10 +28,15 @@ class Database {
 
         try {
             $this->conn = new PDO(
-                "mysql:host=$host;port=$port;dbname=$db_name;charset=utf8",
-                $username,
-                $password
-            );
+  "mysql:host=$host;port=$port;dbname=$db_name;charset=utf8",
+  $username,
+  $password,
+  [
+    PDO::MYSQL_ATTR_SSL_CA => __DIR__ . '/../certs/singlestore_bundle.pem',
+    PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true,
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+  ]
+);
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
             die("Error de conexión: " . $e->getMessage());

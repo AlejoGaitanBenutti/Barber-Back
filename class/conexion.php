@@ -8,14 +8,18 @@ class Database {
     private $conn;
 
     public function getConnection() {
-        // Cargar archivo .env
-        $dotenv = Dotenv::createImmutable(__DIR__ . "/..");
-        $dotenv->load();
-
         // Detectar entorno
+        $env = getenv("APP_ENV");
+
+        // Si estamos en local, cargamos el archivo .env
+        if ($env === false || $env === "local") {
+            $dotenv = Dotenv::createImmutable(__DIR__ . "/..");
+            $dotenv->load();
+        }
+
+        // Seleccionar variables según entorno
         $isProd = getenv("APP_ENV") === "production";
 
-        // Seleccionar variables
         $host = $isProd ? getenv("DB_HOST_PROD") : getenv("DB_HOST");
         $port = $isProd ? getenv("DB_PORT_PROD") : getenv("DB_PORT");
         $db_name = $isProd ? getenv("DB_NAME_PROD") : getenv("DB_NAME");

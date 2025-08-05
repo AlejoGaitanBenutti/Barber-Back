@@ -1,6 +1,8 @@
 <?php
 include __DIR__ . "/../utils/cors.php";
 include __DIR__ . "/../class/productos.php";
+require_once __DIR__ . '/../class/conexion.php';
+
 header("Content-Type: application/json");
 
 $db = New Database;

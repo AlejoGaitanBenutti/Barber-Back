@@ -8,38 +8,50 @@ class Database {
     private $conn;
 
     public function getConnection() {
-        // Detectar entorno
-        $env = getenv("APP_ENV");
+        // Detectar entorno usando $_ENV porque getenv() puede fallar
+        $env = $_ENV["APP_ENV"] ?? false;
 
         // Si estamos en local, cargamos el archivo .env
         if ($env === false || $env === "local") {
-            $dotenv = Dotenv::createImmutable(__DIR__ . "/..");
+            $dotenvPath = __DIR__ . "/..";
+            $dotenv = Dotenv::createImmutable($dotenvPath);
             $dotenv->load();
+            // Recargamos $_ENV para asegurar que se actualice después de load()
+            $env = $_ENV["APP_ENV"] ?? false;
         }
 
-        // Seleccionar variables según entorno
-        $isProd = getenv("APP_ENV") === "production";
+        // Determinar si es producción
+        $isProd = ($env === "production");
 
-        $host = $isProd ? getenv("DB_HOST_PROD") : getenv("DB_HOST");
-        $port = $isProd ? getenv("DB_PORT_PROD") : getenv("DB_PORT");
-        $db_name = $isProd ? getenv("DB_NAME_PROD") : getenv("DB_NAME");
-        $username = $isProd ? getenv("DB_USER_PROD") : getenv("DB_USER");
-        $password = $isProd ? getenv("DB_PASS_PROD") : getenv("DB_PASS");
+        // Leer variables de entorno desde $_ENV
+        $host = $isProd ? ($_ENV["DB_HOST_PROD"] ?? null) : ($_ENV["DB_HOST"] ?? null);
+        $port = $isProd ? ($_ENV["DB_PORT_PROD"] ?? null) : ($_ENV["DB_PORT"] ?? null);
+        $db_name = $isProd ? ($_ENV["DB_NAME_PROD"] ?? null) : ($_ENV["DB_NAME"] ?? null);
+        $username = $isProd ? ($_ENV["DB_USER_PROD"] ?? null) : ($_ENV["DB_USER"] ?? null);
+        $password = $isProd ? ($_ENV["DB_PASS_PROD"] ?? null) : ($_ENV["DB_PASS"] ?? null);
 
         try {
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+            ];
+
+            if ($isProd) {
+                $options[PDO::MYSQL_ATTR_SSL_CA] = __DIR__ . '/../certs/singlestore_bundle.pem';
+                $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = true;
+            }
+
             $this->conn = new PDO(
-  "mysql:host=$host;port=$port;dbname=$db_name;charset=utf8",
-  $username,
-  $password,
-  [
-    PDO::MYSQL_ATTR_SSL_CA => __DIR__ . '/../certs/singlestore_bundle.pem',
-    PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true,
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-  ]
-);
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                "mysql:host=$host;port=$port;dbname=$db_name;charset=utf8",
+                $username,
+                $password,
+                $options
+            );
+
         } catch (PDOException $e) {
-            die("Error de conexión: " . $e->getMessage());
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode(["error" => "Error de conexión: " . $e->getMessage()]);
+            exit;
         }
 
         return $this->conn;

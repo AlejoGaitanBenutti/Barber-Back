@@ -9,6 +9,7 @@ $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 if (in_array($origin, $allowedOrigins)) {
     header("Access-Control-Allow-Origin: $origin");
     header("Vary: Origin"); // para evitar problemas con cache en navegadores
+    header("Access-Control-Allow-Credentials: true");
 }
 
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
